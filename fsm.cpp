@@ -77,10 +77,9 @@ class FSM {
          * It also updates the last heartbeat time to the current time in milliseconds.
          */
         void transitionToState(SystemState newState) {
-            
-
-            stateHistory.clear();
-            stateHistory.push_back({newState, });
+            uint32_t times = millis();
+            currentState = newState;
+            stateHistory.push_back({newState, times});
         }
 
         /**
@@ -88,7 +87,7 @@ class FSM {
          * @param delay The delay in milliseconds to set for the FSM.
          */
         void setDelay(uint32_t delay) {
-
+            this->delay = delay;
         }
 
         /**
@@ -96,7 +95,7 @@ class FSM {
          * @param delay Reference to a uint32_t variable to store the delay in milliseconds.
          */
         void getDelay(uint32_t &delay) const {
-
+            
         }
 
         /**
@@ -104,7 +103,7 @@ class FSM {
          * @param count The number of errors to set.
          */
         void setErrorCount(int count) {
-
+            this->errorCount = count;
         }
 
         /**
@@ -120,7 +119,7 @@ class FSM {
          * @param count The number of moves to set.
          */
         void setMoveCount(int count) {
-
+            this->moveCount = count;
         }
 
         /**
@@ -138,7 +137,7 @@ class FSM {
          * @note This function appends a pair of state and time to the stateHistory vector.
          */
         void addStateToHistory(SystemState state, uint32_t time) {
-
+            stateHistory.push_back({state, time});
         }
 
         /**
@@ -146,7 +145,9 @@ class FSM {
          * @return A vector of pairs containing the state and the time it was entered.
          * @note This function returns a copy of the stateHistory vector.
          */
-        vector<pair<SystemState, uint32_t>> getStateHistory() const;
+        vector<pair<SystemState, uint32_t>> getStateHistory() const {
+            
+        }
 
         /**
          * @brief Get the last heartbeat time of the FSM.
