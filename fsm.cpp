@@ -95,7 +95,7 @@ class FSM {
          * @param delay Reference to a uint32_t variable to store the delay in milliseconds.
          */
         void getDelay(uint32_t &delay) const {
-            
+            delay = this->delay;
         }
 
         /**
@@ -111,7 +111,7 @@ class FSM {
          * @return The number of errors encountered by the FSM.
          */
         int getErrorCount() const {
-
+            return errorCount;
         }
 
         /**
@@ -127,7 +127,7 @@ class FSM {
          * @return The number of moves performed by the FSM.
          */
         int getMoveCount() const {
-
+            return moveCount;
         }
 
         /**
@@ -146,7 +146,7 @@ class FSM {
          * @note This function returns a copy of the stateHistory vector.
          */
         vector<pair<SystemState, uint32_t>> getStateHistory() const {
-            
+            return stateHistory;
         }
 
         /**
@@ -154,20 +154,34 @@ class FSM {
          * @return The last heartbeat time in milliseconds.
          * @note This function returns the lastHeartbeat attribute of the FSM.
          */
-        uint32_t getLastHeartbeat() const;
+        uint32_t getLastHeartbeat() const {
+            return lastHeartbeat;
+        }
 
         /**
          * @brief Set the last heartbeat time of the FSM.
          * @param heartbeat The time in milliseconds to set as the last heartbeat.
          */
-        void setLastHeartbeat(uint32_t heartbeat);
+        void setLastHeartbeat(uint32_t heartbeat) {
+            lastHeartbeat = heartbeat;
+        }
 
         /**
          * @brief Start the FSM.
          * This function initializes the FSM and begins the state update loop.
          * Create a loop that checks the current state every 1000 milliseconds, 
          */
-        void start();
+        void start() {
+            currentState = getCurrentState();
+
+            while (currentState != SystemState::STOPPED) {
+                uint32_t currentTime = millis();
+                currentState = getCurrentState();
+                if (currentTime % 1000 == 0) {
+                    addStateToHistory(currentState, currentTime);
+                }
+            }
+        }
 
         /**
          * @brief Update the FSM state based on the current state.
@@ -182,20 +196,75 @@ class FSM {
          * Update the lastHeartbeat attribute to the current time in milliseconds.
          * Emplace the stateHistory vector with the current state and current time in milliseconds.
          */
-        void update();
+        void update() {
+            currentState = getCurrentState();
+
+            if (currentState == SystemState::INIT) {
+                performInit();
+            } else if (currentState == SystemState::IDLE) {
+                performProcess();
+            } else if(currentState == SystemState::MOVEMENT) {
+                performMovement();
+            } else if(currentState == SystemState::SHOOTING) {
+                performShooting();
+            } else if(currentState == SystemState::CALCULATION) {
+                performCalculation();
+            } else if(currentState == SystemState::ERROR) {
+                performErrorHandling();
+            } else if(currentState == SystemState::STOPPED) {
+                shutdown();
+            }
+            
+            currentState = getCurrentState();
+            lastHeartbeat = millis();
+            addStateToHistory(currentState, lastHeartbeat);
+        }
 
         /**
          * @brief Print the current status of the FSM.
          * This function prints the current state, last heartbeat time, delay, error count
          */
-        void printStatus();
+        void printStatus() {
+            currentState = getCurrentState();
+            lastHeartbeat = getLastHeartbeat();
+            errorCount = getErrorCount();
+            getDelay(delay);
+
+            string state;
+            if (currentState == SystemState::INIT) {
+                state = "INIT";
+            } else if (currentState == SystemState::IDLE) {
+                state = "IDLE";
+            } else if(currentState == SystemState::MOVEMENT) {
+                state = "MOVEMENT";
+            } else if(currentState == SystemState::SHOOTING) {
+                state = "SHOOTING";
+            } else if(currentState == SystemState::CALCULATION) {
+                state = "CALCULATION";
+            } else if(currentState == SystemState::ERROR) {
+                state = "ERROR";
+            } else if(currentState == SystemState::STOPPED) {
+                state = "STOPPED";
+            }
+
+            cout << "FSM Current Status:" << endl;
+            cout << "1.Current State: " << state << endl;
+            cout << "2.Last Heart Beat: " << lastHeartbeat << endl;
+            cout << "3.Delay: " << delay << endl;
+            cout << "4.Error Count: " << errorCount << endl;                                   
+        }
         
         /**
          * @brief Print the state history of the FSM.
          * This function prints the state history, showing each state and the time it was entered.
          * It iterates through the stateHistory vector and prints each state and its corresponding time.
          */
-        void printStateHistory();
+        void printStateHistory() {
+            stateHistory = getStateHistory();
+            
+            cout << "{State, Time}";
+            
+        }
 
         /**
          * @brief Perform the initialization process.
@@ -205,7 +274,20 @@ class FSM {
          * @note This function is called when the FSM is in the INIT state.
          * print "Initializing system..." then invoke printStatus()
          */
-        void performInit();
+        void performInit() {
+            currentState = getCurrentState();
+
+            if (currentState == SystemState::INIT){
+                cout << "Initializing system...";
+                setDelay(1000);
+                transitionToState(SystemState::IDLE);
+
+                uint32_t currentTime = millis();
+                setLastHeartbeat(currentTime);
+
+                printStatus();
+            }
+        }
 
         /**
          * @brief Prompt the user to pick a process to be done.
@@ -217,7 +299,29 @@ class FSM {
          * - calculating (CALCULATION)
          * @note This function is called when the FSM is in the IDLE state.
          */
-        void performProcess();
+        void performProcess() {
+            currentState = getCurrentState();
+            string process;
+            vector<string> type = {"1.IDLE", "2.MOVEMENT", "3.SHOOTING", "4.CALCULATION"};
+
+            if (currentState == SystemState::IDLE) {
+                for(string x : type) {
+                    cout << x << endl;
+                }
+
+                cout  << "Choose process: ";
+                cin >> process;
+                if (process == "IDLE") {
+                    currentState = SystemState::IDLE;
+                } else if (process == "MOVEMENT") {
+                    currentState = SystemState:: MOVEMENT;
+                } else if (process == "SHOOTING") {
+                    currentState = SystemState::SHOOTING;
+                } else if (process == "CALCULATION") {
+                    currentState = SystemState::CALCULATION;
+                }
+            }
+        }
 
         /**
          * @brief Perform the movement process.
@@ -228,7 +332,20 @@ class FSM {
          * if not, transition to the IDLE state.
          * Update the last heartbeat time to the current time in milliseconds.
          */
-        void performMovement();
+        void performMovement() {
+            currentState = getCurrentState();
+            moveCount = getMoveCount();
+
+            if (currentState == SystemState::MOVEMENT) {
+                cout << "Moving...";
+                moveCount ++;
+                if (moveCount >= 3) {
+                    currentState = SystemState::SHOOTING;
+                } else {
+                    SystemState::IDLE;
+                }
+            }
+        }
 
         /**
          * @brief Perform the shooting process.
@@ -238,7 +355,18 @@ class FSM {
          * Transition to the IDLE state.
          * Update the last heartbeat time to the current time in milliseconds.
          */
-        void performShooting();
+        void performShooting() {
+            currentState = getCurrentState();
+            moveCount = getMoveCount();
+            lastHeartbeat = getLastHeartbeat();
+
+            if (currentState == SystemState::SHOOTING) {
+                cout << "Shooting...";
+                moveCount = 0;
+                currentState = SystemState::IDLE;
+                lastHeartbeat = millis();
+            }
+        }
 
         /**
          * @brief Perform the calculation process.
@@ -247,7 +375,19 @@ class FSM {
          * If moveCount is 0, transition to the ERROR state.
          * if moveCount is greater than 0, transition to the IDLE state.
          */
-        void performCalculation();
+        void performCalculation() {
+            moveCount = getMoveCount();
+            currentState = getCurrentState();
+
+            if (currentState == SystemState::CALCULATION) {
+                cout << "Performing calculation...";
+                if (moveCount == 0) {
+                    currentState = SystemState::ERROR;
+                } else if (moveCount > 0) {
+                    currentState = SystemState::IDLE;
+                }
+            }
+        }
 
         /**
          * @brief Handle error conditions.
@@ -257,7 +397,20 @@ class FSM {
          * If errorCount exceeds 3, transition to the STOPPED state.
          * If not, transition to the IDLE state.
          */
-        void performErrorHandling();
+        void performErrorHandling() {
+            currentState = getCurrentState();
+            errorCount = getErrorCount();
+
+            if (currentState == SystemState::ERROR) {
+                cout << "Error occurred, performing error handling...";
+                errorCount ++;
+                if (errorCount >= 3) {
+                    shutdown();
+                } else {
+                    currentState = SystemState::IDLE;
+                }
+            }
+        }
 
         /**
          * @brief shutdown the FSM if the current state is STOPPED.
@@ -265,6 +418,12 @@ class FSM {
          * Print "System stopped, shutting down..."
          * Clear the stateHistory vector.
          */
-        void shutdown();
+        void shutdown() {
+            currentState = getCurrentState();
 
+            if (currentState == SystemState::STOPPED) {
+                cout << "System stopped, shutting down...";
+                stateHistory.clear();
+            }
+        }
 };
