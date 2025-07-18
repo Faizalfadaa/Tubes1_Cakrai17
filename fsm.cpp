@@ -1,13 +1,15 @@
 #include "fsm.hpp"
 
 uint32_t millis() {
-
+    return (uint32_t)(clock() * 1000 / CLOCKS_PER_SEC);
 }
 
 FSM::FSM() {
-    currentState = SystemState::INIT;
+    this->currentState = SystemState::INIT;
     lastHeartbeat = 0;
     errorCount = 0;
+    moveCount = 0;
+
     stateHistory.clear();
     stateHistory.push_back({SystemState::INIT, lastHeartbeat});
 }
@@ -19,13 +21,14 @@ FSM::FSM() {
  * @note this is a user-defined constructor, initializes FSM with a specified delay.
  */
 FSM::FSM(uint32_t delay) {
-    currentState = SystemState::INIT;
+    this->currentState = SystemState::INIT;
     lastHeartbeat = 0;
     errorCount = 0;
+    moveCount = 0;
     this->delay = delay;
     
     stateHistory.clear();
-    stateHistory.push_back({SystemState::INIT, delay});
+    stateHistory.push_back({SystemState::INIT, lastHeartbeat});
 }
 
 /**
@@ -54,7 +57,7 @@ SystemState FSM::getCurrentState() const {
  */
 void FSM::transitionToState(SystemState newState) {
     uint32_t times = millis();
-    currentState = newState;
+    this->currentState = newState;
     stateHistory.push_back({newState, times});
 }
 
@@ -153,8 +156,10 @@ void FSM::start() {
     while (currentState != SystemState::STOPPED) {
         uint32_t currentTime = millis();
         currentState = getCurrentState();
-        if (currentTime % 1000 == 0) {
-            addStateToHistory(currentState, currentTime);
+
+        if (currentTime - lastHeartbeat >= 1000) {
+            update();
+            setLastHeartbeat(currentTime);
         }
     }
 }
@@ -192,7 +197,7 @@ void FSM::update() {
     }
     
     currentState = getCurrentState();
-    lastHeartbeat = millis();
+    setLastHeartbeat(millis());
     addStateToHistory(currentState, lastHeartbeat);
 }
 
@@ -226,11 +231,12 @@ void FSM::printStatus() {
     getDelay(delay);
 
     string state = stateToString(currentState);
-    cout << "FSM Current Status:" << endl;
-    cout << "1.Current State: " << state << endl;
-    cout << "2.Last Heart Beat: " << lastHeartbeat << endl;
-    cout << "3.Delay: " << delay << endl;
-    cout << "4.Error Count: " << errorCount << endl;                                   
+    cout << endl;  
+    cout << "--- FSM Current Status ---" << endl;
+    cout << "1. Current State: " << state << endl;
+    cout << "2. Last Heart Beat: " << lastHeartbeat << endl;
+    cout << "3. Delay: " << delay << endl;
+    cout << "4. Error Count: " << errorCount << endl;                                
 }
 
 /**
@@ -239,9 +245,8 @@ void FSM::printStatus() {
  * It iterates through the stateHistory vector and prints each state and its corresponding time.
  */
 void FSM::printStateHistory() {
-    stateHistory = getStateHistory();
-    
-    cout << "State History {State, Time}";
+    cout << endl;    
+    cout << "--- State History {State, Time} ---" << endl;
     for(int i = 0; i < stateHistory.size(); i++) {
         const auto& entry = stateHistory[i];
         SystemState currentState = entry.first;
@@ -261,7 +266,8 @@ void FSM::printStateHistory() {
 void FSM::performInit() {
     currentState = getCurrentState();
     if (currentState == SystemState::INIT){
-        cout << "Initializing system...";
+        cout << endl;  
+        cout << "Initializing system..." << endl;
         setDelay(1000);
         transitionToState(SystemState::IDLE);
 
@@ -285,23 +291,25 @@ void FSM::performInit() {
 void FSM::performProcess() {
     currentState = getCurrentState();
     string process;
-    vector<string> type = {"1.IDLE", "2.MOVEMENT", "3.SHOOTING", "4.CALCULATION"};
+    vector<string> type = {"1. IDLE", "2. MOVEMENT", "3. SHOOTING", "4. CALCULATION"};
 
+    cout << endl;  
+    cout << "--- Perform Process ---" << endl;
     if (currentState == SystemState::IDLE) {
         for(string x : type) {
             cout << x << endl;
         }
 
-        cout  << "Choose process: ";
+        cout  << ">> Choose process: ";
         cin >> process;
         if (process == "IDLE") {
-            currentState = SystemState::IDLE;
+            this->currentState = SystemState::IDLE;
         } else if (process == "MOVEMENT") {
-            currentState = SystemState:: MOVEMENT;
+            this->currentState = SystemState:: MOVEMENT;
         } else if (process == "SHOOTING") {
-            currentState = SystemState::SHOOTING;
+            this->currentState = SystemState::SHOOTING;
         } else if (process == "CALCULATION") {
-            currentState = SystemState::CALCULATION;
+            this->currentState = SystemState::CALCULATION;
         }
     }
 }
@@ -320,12 +328,13 @@ void FSM::performMovement() {
     moveCount = getMoveCount();
 
     if (currentState == SystemState::MOVEMENT) {
-        cout << "Moving...";
-        moveCount ++;
+        cout << endl;  
+        cout << "Moving..." << endl;
+        this->moveCount ++;
         if (moveCount >= 3) {
-            currentState = SystemState::SHOOTING;
+            this->currentState = SystemState::SHOOTING;
         } else {
-            SystemState::IDLE;
+            this->currentState = SystemState::IDLE;
         }
     }
 }
@@ -344,10 +353,11 @@ void FSM::performShooting() {
     lastHeartbeat = getLastHeartbeat();
 
     if (currentState == SystemState::SHOOTING) {
-        cout << "Shooting...";
-        moveCount = 0;
-        currentState = SystemState::IDLE;
-        lastHeartbeat = millis();
+        cout << endl;  
+        cout << "Shooting..." << endl;
+        this->moveCount = 0;
+        this->currentState = SystemState::IDLE;
+        setLastHeartbeat(millis());
     }
 }
 
@@ -363,11 +373,12 @@ void FSM::performCalculation() {
     currentState = getCurrentState();
 
     if (currentState == SystemState::CALCULATION) {
-        cout << "Performing calculation...";
+        cout << endl;  
+        cout << "Performing calculation..." << endl;
         if (moveCount == 0) {
-            currentState = SystemState::ERROR;
+            this->currentState = SystemState::ERROR;
         } else if (moveCount > 0) {
-            currentState = SystemState::IDLE;
+            this->currentState = SystemState::IDLE;
         }
     }
 }
@@ -385,12 +396,13 @@ void FSM::performErrorHandling() {
     errorCount = getErrorCount();
 
     if (currentState == SystemState::ERROR) {
-        cout << "Error occurred, performing error handling...";
-        errorCount ++;
+        cout << "Error occurred, performing error handling..." << endl;
+        this->errorCount ++;
         if (errorCount >= 3) {
+            this->currentState = SystemState::STOPPED;
             shutdown();
         } else {
-            currentState = SystemState::IDLE;
+            this->currentState = SystemState::IDLE;
         }
     }
 }
@@ -405,7 +417,8 @@ void FSM::shutdown() {
     currentState = getCurrentState();
 
     if (currentState == SystemState::STOPPED) {
-        cout << "System stopped, shutting down...";
+        cout << endl;  
+        cout << "System stopped, shutting down..." << endl << endl;
         stateHistory.clear();
     }
 }
