@@ -251,7 +251,7 @@ void FSM::printStateHistory() {
         const auto& entry = stateHistory[i];
         SystemState currentState = entry.first;
         uint32_t currentTime = entry.second;
-        cout << "{" << stateToString(currentState) << "," << currentTime << "}" << endl;
+        cout << i + 1<< ". {" << stateToString(currentState) << "," << currentTime << "}" << endl;
     }              
 }
 
@@ -310,6 +310,13 @@ void FSM::performProcess() {
             this->currentState = SystemState::SHOOTING;
         } else if (process == "CALCULATION") {
             this->currentState = SystemState::CALCULATION;
+        } else if (process == "HISTORY") {
+            printStateHistory();
+        } else if (process == "STATUS") {
+            printStatus();
+        } else {
+            cout << endl;
+            cout << "Invalid Process" << endl;
         }
     }
 }
