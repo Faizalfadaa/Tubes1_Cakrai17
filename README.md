@@ -1,6 +1,6 @@
-## Tubes1_Cakrai17 
+# Tubes1_Cakrai17 
 
-# Penjelasan Implementasi !!!
+## Penjelasan Implementasi !!!
 
 1. uint32_t millis()
     - Mengembalikan waktu dalam milidetik sejak program dimulai, dengan mengonversi hasil clock() menggunakan CLOCKS_PER_SEC.
@@ -125,11 +125,11 @@
 28. string stateToString(SystemState currentState)
     - Fungsi tambahan yang melakukan return nama state FSM dalam format string sesuai dengan state FSM nya
 
-# How to Run the code ???
-- if pakai WSL atau Linux:
-    make
-    ./main
-- if pakai windows terminal:
-    g++ -o main main.cpp fsm.cpp
-    ./main
+## How to Run the code ???
+1. if pakai WSL atau Linux:
+    - make
+    - ./main
+2. if pakai windows terminal:
+    - g++ -o main main.cpp fsm.cpp
+    - ./main
 
