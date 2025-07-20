@@ -4,6 +4,11 @@ uint32_t millis() {
     return (uint32_t)(clock() * 1000 / CLOCKS_PER_SEC);
 }
 
+/**
+ * @brief set currentState to INIT, lastHeartbeat and errorCount to 0, don't forget to intialize the stateHistory vector.
+ * @note This is a constructor, by default C++ will generate a default constructor if none is provided.
+ * @note The downside of this constructor is empty, meaning it does not perform any initialization if needed.
+ */
 FSM::FSM() {
     this->currentState = SystemState::INIT;
     lastHeartbeat = 0;
